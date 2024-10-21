@@ -35,7 +35,7 @@ export async function getUserByUsernameAndPassword(username, password){
     return rows[0]
 }
 
-getUserByUsernameOrEmail
+
 
 export async function getUserByUsernameOrEmail(username, email){
     //DEBUG
