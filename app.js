@@ -1,11 +1,14 @@
 import express from 'express';
-import {getUserByUsernameOrEmailAndPassword, createUser, getUserByUsernameOrEmail, getUserById, updateUserProfile} from './database.js';
+import {getUserByUsernameOrEmailAndPassword, createUser, getUserByUsernameOrEmail, getUserById, updateUserProfile, deleteUserById} from './database.js';
 import jwt from 'jsonwebtoken';
-
+import cors from 'cors'
 
 const SECRET_KEY = 'your_secret_key'; // Use a strong secret key in production
 
 const app = express();
+
+// Use CORS middleware
+app.use(cors());
 
 app.use(express.json())
 
@@ -82,8 +85,8 @@ app.post("/users", async (req, res) => {
 
 app.get("/users/:id", async (req, res) => {
     try {
-        // const token = req.headers['authorization']?.split(' ')[1];
-        // if (!token) return res.status(403).send('Forbidden');
+        const token = req.headers['authorization']?.split(' ')[1];
+        if (!token) return res.status(403).send('Forbidden');
         
         const userId = req.params.id; 
 
@@ -92,15 +95,15 @@ app.get("/users/:id", async (req, res) => {
             return res.status(400).json({ error: "Request missing parameters" });
         }
 
-        // // Verify the token
-        // const decoded = jwt.verify(token, SECRET_KEY); // Synchronous verification
-        // if (!decoded?.userId) {
-        //     return res.status(401).json({ error: "Forbidden: badToken" });
-        // }
+        // Verify the token
+        const decoded = jwt.verify(token, SECRET_KEY); // Synchronous verification
+        if (!decoded?.userId) {
+            return res.status(401).json({ error: "Forbidden: badToken" });
+        }
         
-        // if (decoded.userId != userId) {
-        //     return res.status(409).json({ error: "Forbidden: you are not allowed to get this info" });
-        // }
+        if (decoded.userId != userId) {
+            return res.status(409).json({ error: "Forbidden: you are not allowed to get this info" });
+        }
 
         // get user data
         const user = await getUserById(userId);
@@ -126,8 +129,8 @@ app.get("/users/:id", async (req, res) => {
 
 
 app.put("/users/:id", async (req, res) => {
-    // const token = req.headers['authorization']?.split(' ')[1];
-    // if (!token) return res.status(403).send('Forbidden');
+    const token = req.headers['authorization']?.split(' ')[1];
+    if (!token) return res.status(403).send('Forbidden');
     const userId = req.params.id; 
 
     const userData  = req.body;
@@ -136,15 +139,15 @@ app.put("/users/:id", async (req, res) => {
         return res.status(409).json({ error: "Request missing userData" });
 
     }
-    // // Verify the token
-    // const decoded = jwt.verify(token, SECRET_KEY); // Synchronous verification
-    // if (!decoded?.userId) {
-    //     return res.status(401).json({ error: "Forbidden: badToken" });
-    // }
+    // Verify the token
+    const decoded = jwt.verify(token, SECRET_KEY); // Synchronous verification
+    if (!decoded?.userId) {
+        return res.status(401).json({ error: "Forbidden: badToken" });
+    }
     
-    // if (decoded.userId != userId) {
-    //     return res.status(409).json({ error: "Forbidden: you are not allowed to get this info" });
-    // }
+    if (decoded.userId != userId) {
+        return res.status(409).json({ error: "Forbidden: you are not allowed to get this info" });
+    }
     try {
         // Check for missing fields
         if (!userData?.id || !userData?.username || !userData?.email || !userData?.profilePic) {
@@ -167,8 +170,62 @@ app.put("/users/:id", async (req, res) => {
     }
 });
 // -----------------------------------------        New         ----------------------------------------
-//TODO
+app.delete("/users/:id", async (req, res) => {
+    try {
+        const token = req.headers['authorization']?.split(' ')[1];
+        if (!token) return res.status(403).send('Forbidden');
+        
+        const userId = req.params.id; 
+        
+        // Verify the token
+        const decoded = jwt.verify(token, SECRET_KEY); // Synchronous verification
+        if (!decoded?.userId) {
+            return res.status(401).json({ error: "Unauthorized: Invalid token" });
+        }
+        
+        if (decoded.userId != userId) {
+            return res.status(403).json({ error: "Forbidden: you are not allowed to delete this user" });
+        }
 
+        const user = await deleteUserById(userId);
+        if (!user) {
+            return res.status(404).json({ error: `Aucun utilisateur pour l'id : ${id}`});
+        }
+
+        // Return the information
+        res.status(200).json({
+            message:"Success"
+        });
+    } catch (error) {
+        if (error instanceof jwt.JsonWebTokenError) {
+            return res.status(401).send('Invalid token'); // Handle JWT-specific errors
+        }
+        console.error('Error deleting user: ', error);
+        res.status(500).json({ error: 'Internal server error.' });
+    }
+});
+app.post("/users/authenticate", async (req, res) => {
+    
+    try {
+        const token = req.headers['authorization']?.split(' ')[1];
+        if (!token) return res.status(403).send('Forbidden');
+
+        // Verify the token
+        const decoded = jwt.verify(token, SECRET_KEY); // Synchronous verification
+        if (!decoded?.userId) {
+            return res.status(409).json({ error: "Forbidden: badToken" });
+        }
+
+    
+        
+        res.status(200).json({
+            id: decoded.userId,
+        });
+    } catch (error) {
+        console.error('Error during authenticate: ', error);
+        res.status(500).json({ error: 'Internal server error.' });
+    }
+});
 // ----------------------------------------------------------------------------------------------------
 
 // Lorsqu'une erreur se produit dans l'application (par exemple, une exception non gérée), Express appelle automatiquement
