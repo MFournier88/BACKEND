@@ -1,28 +1,17 @@
 import express from 'express';
-// Ces fonctions sont celles que nous avons créé précédemment, assurez vous que l'importation réussit                
-import {getUserByUsernameOrEmailAndPassword, createUser, getUserByUsernameOrEmail} from './database.js';
+import {getUserByUsernameOrEmailAndPassword, createUser, getUserByUsernameOrEmail, getUserById, updateUserProfile} from './database.js';
+import jwt from 'jsonwebtoken';
+
+
+const SECRET_KEY = 'your_secret_key'; // Use a strong secret key in production
 
 const app = express();
 
-// app.use(express.json()) est une instruction cruciale pour configurer Express afin de gérer et d'interpréter
-//   automatiquement les données JSON envoyées via les requêtes HTTP, facilitant ainsi le développement d'applications
-//   web basées sur Node.js avec Express.
 app.use(express.json())
 
-/**
-* @route POST /auth/signin
-* @description Authenticate a user by username and password.
-* @param {Object} req - The request object containing the username and password in the body.
-* @param {string} req.body.usernameOrEmail - The username/email of the user attempting to authenticate.
-* @param {string} req.body.password - The password of the user attempting to authenticate.
-* @returns {Object} 200 - Returns the user object if authentication is successful.
-* @returns {Object} 404 - Returns an error message if the user is not found.
-* @returns {Object} 500 - Returns an error message if there is an internal server error.
-* @throws {Error} - Logs an error message to the console if user retrieval fails.
-*/
-app.post("/auth/signin", async (req, res) => {
+app.post("/users/signin", async (req, res) => {
     const { usernameOrEmail, password } = req.body;
-    console.log("Post : auth/signin")
+    console.log("Post : users/signin")
 
     // Check if username or email and password are provided
     if (!usernameOrEmail || !password) {
@@ -39,12 +28,14 @@ app.post("/auth/signin", async (req, res) => {
         if (!user) {
             return res.status(401).json({ error: "Invalid username/email or password." });
         }
-
+        const userId = user.id
+        const token = jwt.sign({ userId }, SECRET_KEY, { expiresIn: '1h' });
         // Return user data (ensure sensitive data like password is not returned)
         res.status(200).json({
             id: user.id,
             username: user.username,
             email: user.email,
+            token
             // Add any other fields you want to include in the response
         });
     } catch (error) {
@@ -52,21 +43,9 @@ app.post("/auth/signin", async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
-// app.post("/auth/signin", async (req,res) => {
-//     const { username, password } = req.body;
-//     try {
-//         const user = await getUserByUsernameAndPassword(username, password);
-//         if(!user) {
-//             return res.status(404).json({error: "User not found"});
-//         }
-//         res.status(200).json(user)
-//     }catch (error) {
-//         console.error('Error retrieving user: ', error);
-//         res.status(500).json({ error: 'Internal server error'});
-//     }
-// })
 
-app.post("/auth/signup", async (req, res) => {
+
+app.post("/users", async (req, res) => {
     const { username, password, email } = req.body;
 
     // Check for missing fields
@@ -83,19 +62,114 @@ app.post("/auth/signup", async (req, res) => {
 
         // Proceed to create the user
         const newUser = await createUser( email, username, password );
-
+        const token = jwt.sign({ userId:newUser.id }, SECRET_KEY, { expiresIn: '1h' });
+        console.log(token)
         // Return the newly created user information
         res.status(201).json({
             id: newUser.id,
             username: newUser.username,
             email: newUser.email,
+            token
+            
         });
     } catch (error) {
         console.error('Error during signup: ', error);
         res.status(500).json({ error: 'Internal server error.' });
     }
 });
- 
+
+
+
+app.get("/users/:id", async (req, res) => {
+    try {
+        // const token = req.headers['authorization']?.split(' ')[1];
+        // if (!token) return res.status(403).send('Forbidden');
+        
+        const userId = req.params.id; 
+
+        // Check for missing fields
+        if (!userId) {
+            return res.status(400).json({ error: "Request missing parameters" });
+        }
+
+        // // Verify the token
+        // const decoded = jwt.verify(token, SECRET_KEY); // Synchronous verification
+        // if (!decoded?.userId) {
+        //     return res.status(401).json({ error: "Forbidden: badToken" });
+        // }
+        
+        // if (decoded.userId != userId) {
+        //     return res.status(409).json({ error: "Forbidden: you are not allowed to get this info" });
+        // }
+
+        // get user data
+        const user = await getUserById(userId);
+        if (!user) {
+            return res.status(404).json({ error: `Aucun utilisateur pour l'id : ${id}`});
+        }
+
+        // Return the information
+        res.status(200).json({
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            profilePic: user.profilePic
+        });
+    } catch (error) {
+        if (error instanceof jwt.JsonWebTokenError) {
+            return res.status(401).send('Invalid token'); // Handle JWT-specific errors
+        }
+        console.error('Error fetching profile Data: ', error);
+        res.status(500).json({ error: 'Internal server error.' });
+    }
+});
+
+
+app.put("/users/:id", async (req, res) => {
+    // const token = req.headers['authorization']?.split(' ')[1];
+    // if (!token) return res.status(403).send('Forbidden');
+    const userId = req.params.id; 
+
+    const userData  = req.body;
+
+    if(!userData || userId != userData?.id){
+        return res.status(409).json({ error: "Request missing userData" });
+
+    }
+    // // Verify the token
+    // const decoded = jwt.verify(token, SECRET_KEY); // Synchronous verification
+    // if (!decoded?.userId) {
+    //     return res.status(401).json({ error: "Forbidden: badToken" });
+    // }
+    
+    // if (decoded.userId != userId) {
+    //     return res.status(409).json({ error: "Forbidden: you are not allowed to get this info" });
+    // }
+    try {
+        // Check for missing fields
+        if (!userData?.id || !userData?.username || !userData?.email || !userData?.profilePic) {
+            return res.status(400).json({ error: "Request body missing parameters" });
+        }
+
+        // alter user data
+        const user = await updateUserProfile(userData);
+        if (!user) {
+            return res.status(404).json({ error: `Error while updating data`});
+        }
+
+        // Return the information
+        res.status(200).json({
+            message:"Success"
+        });
+    } catch (error) {
+        console.error('Error updating profile Data: ', error);
+        res.status(500).json({ error: 'Internal server error.' });
+    }
+});
+// -----------------------------------------        New         ----------------------------------------
+//TODO
+
+// ----------------------------------------------------------------------------------------------------
 
 // Lorsqu'une erreur se produit dans l'application (par exemple, une exception non gérée), Express appelle automatiquement
 // ce middleware d'erreur avec l'objet d'erreur (err), ce qui permet de la gérer de manière centralisée et uniforme.

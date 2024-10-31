@@ -35,8 +35,6 @@ export async function getUserByUsernameAndPassword(username, password){
     return rows[0]
 }
 
-
-
 export async function getUserByUsernameOrEmail(username, email){
     //DEBUG
     console.log(`Database : get users with username: ${username} OR email : ${email}`)
@@ -53,8 +51,30 @@ export async function createUser(email, username, password){
     return rows[0]
 }
 
+export async function getUserById(id){
+    //Renvoi toutes les informations de l'utilisateur avec cet id
+    //DEBUG
+    console.log(`Database : get users by Id : ${id}`)
+    //
+    const [rows] = await pool.query(`SELECT * FROM users WHERE id=?`,[id])
+    return rows[0]
+}
+
+export async function updateUserProfile(userData){
+    //Modifie les données de l'utilisateur avec userData = {id,username,email,profilePic}
+    //DEBUG
+    console.log(`Database : update users with userData.id : ${userData.id}`)
+    //
+    const [rows] = await pool.query(`   UPDATE users
+                                        SET 
+                                            username = ?,
+                                            email = ?,
+                                            profilePic = ?
+
+                                        WHERE id = ?;`,[userData.username,userData.email,userData.profilePic,userData.id])
+    return true
+}
+
+//TODO--------------------------------------------------------------------------------
 
 // -----------------------------------------          Tests          ----------------------------------------------
-//DEBUG
-// const user = await createUser("drago123@gmail.com","Drago Malefoy", 'bully');
-// console.log(user)
