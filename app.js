@@ -25,6 +25,7 @@ app.post("/users/signin", async (req, res) => {
         // Modify the user retrieval function to accept either username or email
         console.log(`End point request with user/email : ${usernameOrEmail} and pass : ${password}`)
 
+        console.log(`hello`)
 
         const user = await getUserByUsernameOrEmailAndPassword(usernameOrEmail, password);
         console.log(`Found user : ${user}`)
@@ -169,7 +170,6 @@ app.put("/users/:id", async (req, res) => {
         res.status(500).json({ error: 'Internal server error.' });
     }
 });
-// -----------------------------------------        New         ----------------------------------------
 app.delete("/users/:id", async (req, res) => {
     try {
         const token = req.headers['authorization']?.split(' ')[1];
@@ -226,7 +226,6 @@ app.post("/users/authenticate", async (req, res) => {
         res.status(500).json({ error: 'Internal server error.' });
     }
 });
-// ----------------------------------------------------------------------------------------------------
 
 // Lorsqu'une erreur se produit dans l'application (par exemple, une exception non gérée), Express appelle automatiquement
 // ce middleware d'erreur avec l'objet d'erreur (err), ce qui permet de la gérer de manière centralisée et uniforme.

@@ -75,7 +75,6 @@ export async function updateUserProfile(userData){
     return true
 }
 
-//TODO--------------------------------------------------------------------------------
 export async function deleteUserById(id){
     //DEBUG
     console.log(`Database : delete users with id : ${id}`)
@@ -84,4 +83,3 @@ export async function deleteUserById(id){
                                         WHERE id = ?;`,[id])
     return status[0].affectedRows
 }
-// -----------------------------------------          Tests          ----------------------------------------------
