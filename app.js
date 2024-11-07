@@ -1,5 +1,5 @@
 import express from 'express';
-import {getUserByUsernameOrEmailAndPassword, createUser, getUserByUsernameOrEmail, getUserById, updateUserProfile, deleteUserById, getBlocks} from './database.js';
+import {getUserByUsernameOrEmailAndPassword, createUser, getUserByUsernameOrEmail, getUserById, updateUserProfile, deleteUserById} from './database.js';
 import jwt from 'jsonwebtoken';
 import cors from 'cors'
 
@@ -227,3 +227,15 @@ app.post("/users/authenticate", async (req, res) => {
     }
 });
 
+
+// Lorsqu'une erreur se produit dans l'application (par exemple, une exception non gérée), Express appelle automatiquement
+// ce middleware d'erreur avec l'objet d'erreur (err), ce qui permet de la gérer de manière centralisée et uniforme.
+app.use((err, req, res, next) => {
+    console.error(err.stack)
+    res.status(1045).send('Something broke!')
+})
+
+// Lance le serveur et lui indique quel port utiliser 
+app.listen(8080, () => {
+    console.log('Server is runnig on port 8080')
+})
