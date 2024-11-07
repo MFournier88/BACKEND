@@ -1,5 +1,5 @@
 import express from 'express';
-import {getUserByUsernameOrEmailAndPassword, createUser, getUserByUsernameOrEmail, getUserById, updateUserProfile, deleteUserById} from './database.js';
+import {getUserByUsernameOrEmailAndPassword, createUser, getUserByUsernameOrEmail, getUserById, updateUserProfile, deleteUserById, getBlocks} from './database.js';
 import jwt from 'jsonwebtoken';
 import cors from 'cors'
 
@@ -205,19 +205,25 @@ app.delete("/users/:id", async (req, res) => {
     }
 });
 app.post("/users/authenticate", async (req, res) => {
-    //403 si aucun token
-    //409 si le token ne contient pas de userId
     
+    try {
+        const token = req.headers['authorization']?.split(' ')[1];
+        if (!token) return res.status(403).send('Forbidden');
+
+        // Verify the token
+        const decoded = jwt.verify(token, SECRET_KEY); // Synchronous verification
+        if (!decoded?.userId) {
+            return res.status(409).json({ error: "Forbidden: badToken" });
+        }
+
+    
+        
+        res.status(200).json({
+            id: decoded.userId,
+        });
+    } catch (error) {
+        console.error('Error during authenticate: ', error);
+        res.status(500).json({ error: 'Internal server error.' });
+    }
 });
 
-// Lorsqu'une erreur se produit dans l'application (par exemple, une exception non gérée), Express appelle automatiquement
-// ce middleware d'erreur avec l'objet d'erreur (err), ce qui permet de la gérer de manière centralisée et uniforme.
-app.use((err, req, res, next) => {
-    console.error(err.stack)
-    res.status(1045).send('Something broke!')
-})
-
-// Lance le serveur et lui indique quel port utiliser 
-app.listen(8080, () => {
-    console.log('Server is runnig on port 8080')
-})

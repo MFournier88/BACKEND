@@ -83,3 +83,5 @@ export async function deleteUserById(id){
                                         WHERE id = ?;`,[id])
     return status[0].affectedRows
 }
+
+
