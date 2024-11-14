@@ -85,3 +85,13 @@ export async function deleteUserById(id){
 }
 
 
+export async function getBlocks() {
+    //DEBUG
+    console.log(`Database : get Blocks `)
+    //
+    const [blocks] = await pool.query(`SELECT * FROM blocks;`)
+    
+    
+    return blocks;
+} 
+// console.log(await getBlocks())

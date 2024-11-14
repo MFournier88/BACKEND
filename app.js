@@ -1,5 +1,5 @@
 import express from 'express';
-import {getUserByUsernameOrEmailAndPassword, createUser, getUserByUsernameOrEmail, getUserById, updateUserProfile, deleteUserById} from './database.js';
+import {getUserByUsernameOrEmailAndPassword, createUser, getUserByUsernameOrEmail, getUserById, updateUserProfile, deleteUserById, getBlocks} from './database.js';
 import jwt from 'jsonwebtoken';
 import cors from 'cors'
 
@@ -227,6 +227,20 @@ app.post("/users/authenticate", async (req, res) => {
     }
 });
 
+app.get("/blocks", async (req, res) => {
+    
+    try {
+        const blocks = await getBlocks();
+        if (!blocks) {
+            return res.status(404).json({ error: `Aucun blocks dans la db : ${id}`});
+        }
+
+        res.status(200).json(blocks);
+    } catch (error) {
+        console.error('Error getting blocks: ', error);
+        res.status(500).json({ error: 'Internal server error.' });
+    }
+});
 
 // Lorsqu'une erreur se produit dans l'application (par exemple, une exception non gérée), Express appelle automatiquement
 // ce middleware d'erreur avec l'objet d'erreur (err), ce qui permet de la gérer de manière centralisée et uniforme.
