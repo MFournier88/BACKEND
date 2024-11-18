@@ -230,11 +230,12 @@ app.post("/users/authenticate", async (req, res) => {
 app.get("/blocks", async (req, res) => {
     
     try {
+        console.log("app.js : Getting blocks")
         const blocks = await getBlocks();
         if (!blocks) {
             return res.status(404).json({ error: `Aucun blocks dans la db : ${id}`});
         }
-
+        
         res.status(200).json(blocks);
     } catch (error) {
         console.error('Error getting blocks: ', error);
